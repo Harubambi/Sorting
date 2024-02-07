@@ -1,0 +1,78 @@
+from pyglet.window import Window
+from pyglet.app import run
+from pyglet.shapes import Rectangle
+from pyglet.graphics import Batch
+from pyglet import clock
+import colorsys
+
+class Renderer(Window):
+    def __init__(self):
+        super().__init__(860, 560, "Merge Sort Visualization")
+        self.batch = Batch()
+        self.data = [10, 7, 30, 21, 5, 8, 27, 3, 2, 28, 9, 4, 23, 6, 1, 12, 15, 25, 11, 13, 24, 14, 20, 17, 29, 18, 16, 19, 22, 26]
+        self.colors = [colorsys.hsv_to_rgb(value/30, 0.5, 0.8) for value in self.data]
+        self.bars = []
+        for i, (value, color) in enumerate(zip(self.data, self.colors)):
+            rgb_color = tuple(int(c * 255) for c in color)
+            self.bars.append(Rectangle(50 + i * 25, 50, 15, value * 15, color=rgb_color, batch=self.batch))
+
+        self.merge_sort_steps = []
+        self.merge_sort(self.data, 0, len(self.data) - 1)
+
+    def merge_sort(self, arr, left, right):
+        if left < right:
+            mid = (left + right) // 2
+            self.merge_sort(arr, left, mid)
+            self.merge_sort(arr, mid + 1, right)
+            self.merge(arr, left, mid, right)
+
+    def merge(self, arr, left, mid, right):
+        temp = [0] * len(arr)
+        i = left
+        j = mid + 1
+        k = left
+
+        while i <= mid and j <= right:
+            if arr[i] <= arr[j]:
+                temp[k] = arr[i]
+                i += 1
+            else:
+                temp[k] = arr[j]
+                j += 1
+            k += 1
+
+        while i <= mid:
+            temp[k] = arr[i]
+            i += 1
+            k += 1
+
+        while j <= right:
+            temp[k] = arr[j]
+            j += 1
+            k += 1
+
+        for index in range(left, right + 1):
+            arr[index] = temp[index]
+            self.merge_sort_steps.append(arr[:])
+
+        self.update_bars()
+
+    def update_bars(self):
+        self.colors = [colorsys.hsv_to_rgb(value/30, 0.5, 0.8) for value in self.data]
+        self.bars = []
+        for i, (value, color) in enumerate(zip(self.data, self.colors)):
+            rgb_color = tuple(int(c * 255) for c in color)
+            self.bars.append(Rectangle(50 + i * 25, 50, 15, value * 15, color=rgb_color, batch=self.batch))
+
+    def on_update(self, deltatime):
+        if self.merge_sort_steps:
+            self.data = self.merge_sort_steps.pop(0)
+            self.update_bars()
+
+    def on_draw(self):
+        self.clear()
+        self.batch.draw()
+
+renderer = Renderer()
+clock.schedule_interval(renderer.on_update, 0.25)
+run()
